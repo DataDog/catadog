@@ -9,15 +9,22 @@ bundle install
 bundle exec ruby catadog.rb
 ```
 
+Now start your agent and app!
+
+Remember to do either one of:
+
+- configure your app's agent connection to hit on the correct port
+- configure your agent to listen to another port, and have `catadog` listen on 8126 as the default and point to the new agent's port by using the settings below
+
 ## Examples
 
-Change listening host and port
+Change listening host and port (defaults to 127.0.0.1 8128)
 
 ```
 bundle exec ruby catadog.rb -h 0.0.0.0 -p 8888
 ```
 
-Change agent host and port to proxy to
+Change agent host and port to proxy to (defaults to 127.0.0.1 8126)
 
 ```
 bundle exec ruby catadog.rb --agent-host 10.1.2.3 --agent-port 8127
