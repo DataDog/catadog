@@ -115,11 +115,16 @@ module Datadog
     end
 
     class Proxy
+      def initialize(host, port)
+        @host = host
+        @port = port
+      end
+
       def call(env)
         r = Rack::Request.new(env)
 
-        host = "172.16.182.129"
-        port = 8126
+        host = @host
+        port = @port
         uri = URI.join("http://#{host}:#{port}", r.fullpath)
 
         Net::HTTP.start(uri.host, uri.port) do |http|
@@ -168,7 +173,7 @@ module Datadog
 
         @server = WEBrick::HTTPServer.new(**options(settings, logger: logger))
 
-        @app = rack_app
+        @app = rack_app(settings)
 
         @server.mount_proc("/", method(:handler))
       end
@@ -183,7 +188,7 @@ module Datadog
 
       private
 
-      def rack_app
+      def rack_app(settings)
         Rack::Builder.new do
           map "/catadog" do
             run App.new
@@ -192,7 +197,7 @@ module Datadog
           use Intercept
           use Mock
 
-          run Proxy.new
+          run Proxy.new(settings.agent_host, settings.agent_port)
         end.to_app
       end
 
@@ -267,13 +272,17 @@ module Datadog
         :debug,
         :verbosity,
         :host,
-        :port
+        :port,
+        :agent_host,
+        :agent_port
 
       def initialize
         @debug = false
         @verbosity = 0
-        @hostname = IPAddr.new("127.0.0.1")
-        @port = 8126
+        @host = IPAddr.new("127.0.0.1")
+        @port = 8128
+        @agent_host = IPAddr.new("127.0.0.1")
+        @agent_port = 8126
       end
 
       def to_h
@@ -298,10 +307,14 @@ module Datadog
             settings.debug = true
           when "-v", "--verbose"
             settings.verbosity += 1
-          when "-h", "--host"
+          when "-h", "--bind"
             settings.host = IPAddr.new(args.shift)
           when "-p", "--port"
             settings.port = Integer(args.shift)
+          when "-f", "--agent-host"
+            settings.agent_host = IPAddr.new(args.shift)
+          when "-g", "--agent-port"
+            settings.agent_port = Integer(args.shift)
           else
             raise UsageError, "invalid argument: #{arg}"
           end
