@@ -321,6 +321,7 @@ module Datadog
       def options(settings, logger:)
         {
           Logger: logger,
+          AccessLog: [[logger.instance_variable_get(:@logdev).dev, WEBrick::AccessLog::COMBINED_LOG_FORMAT]],
           BindAddress: settings.host.to_s,
           Port: settings.port
           # RequestCallback: request_callback
@@ -336,7 +337,9 @@ module Datadog
         :port,
         :agent_host,
         :agent_port,
-        :record_dir
+        :record_dir,
+        :silent,
+        :log
 
       def initialize
         @debug = false
@@ -346,6 +349,8 @@ module Datadog
         @agent_host = IPAddr.new("127.0.0.1")
         @agent_port = 8126
         @record_dir = nil
+        @silent = false
+        @log = $stderr
       end
 
       def to_h
@@ -368,8 +373,12 @@ module Datadog
           case arg
           when "-d", "--debug"
             settings.debug = true
+          when "-s", "--silent"
+            settings.silent = true
           when "-v", "--verbose"
             settings.verbosity += 1
+          when "-l", "--log"
+            settings.log = Pathname.new(args.shift).open("wb")
           when "-h", "--bind"
             settings.host = IPAddr.new(args.shift)
           when "-p", "--port"
@@ -389,12 +398,14 @@ module Datadog
       end
 
       def run
-        logger = Logger.new($stderr, level: log_level)
+        logger = Logger.new(@settings.silent ? Pathname.new("/dev/null").open("wb") : @settings.log, level: log_level)
         logger.debug { "settings: #{@settings}" }
 
         server = Server.new(@settings, logger: logger)
 
         server.start
+      ensure
+        @settings.log.close
       end
 
       private
