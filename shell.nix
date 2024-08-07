@@ -3,17 +3,17 @@
   pkgs ? import <nixpkgs> {},
 
   # use a pinned package state
-  pinned ? import(fetchTarball("https://github.com/NixOS/nixpkgs/archive/14d9b465c71.tar.gz")) {},
+  pinned ? import(fetchTarball("https://github.com/NixOS/nixpkgs/archive/b87dfeec0dd1.tar.gz")) {},
 }:
 let
   # specify ruby version to use
-  ruby = pinned.ruby_3_1;
+  ruby = pinned.ruby_3_3;
 
   # control llvm/clang version (e.g for packages built from source)
-  llvm = pinned.llvmPackages_12;
+  llvm = pinned.llvmPackages_18;
 
   # control gcc version (e.g for packages built from source)
-  gcc = pinned.gcc12;
+  gcc = pinned.gcc14;
 in llvm.stdenv.mkDerivation {
   # unique project name for this environment derivation
   name = "dd-trace-rb.devshell";
