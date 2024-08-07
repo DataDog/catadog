@@ -415,7 +415,7 @@ module Datadog
           when "-g", "--agent-port"
             settings.agent_port = Integer(args.shift)
           when "-r", "--record"
-            settings.record_dir = (args.empty? || args.first.start_with?("--")) ? :auto : Pathname.new(args.shift)
+            settings.record_dir = (args.empty? || args.first.start_with?("-")) ? :auto : Pathname.new(args.shift)
           when "-m", "--mock"
             settings.mocks << String(args.shift)
           else
