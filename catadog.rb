@@ -15,6 +15,14 @@ require "base64"
 require "date"
 require "pathname"
 
+class WEBrick::HTTPServlet::ProcHandler
+  # rubocop:disable Style/Alias
+  alias do_PATCH do_GET
+  alias do_PUT do_GET
+  alias do_DELETE do_GET
+  # rubocop:enable Style/Alias
+end
+
 module Datadog
   module Catadog
     class App < Sinatra::Base
