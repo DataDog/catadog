@@ -146,7 +146,7 @@ module Datadog
       private
 
       def dir
-        @dir ||= Pathname.new("out") / @ts.iso8601
+        @dir ||= Pathname.new("records") / @ts.iso8601
       end
 
       def filename
