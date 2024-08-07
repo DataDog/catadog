@@ -40,5 +40,8 @@ in llvm.stdenv.mkDerivation {
 
     # enable calling gem scripts without bundle exec
     export PATH="$GEM_HOME/bin:$PATH"
+
+    # enable `bundle exec`-less commands
+    export RUBYGEMS_GEMDEPS="$(pwd)/Gemfile
   '';
 }
