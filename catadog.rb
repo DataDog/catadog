@@ -109,9 +109,10 @@ module Datadog
 
     # Dump from `Intercept`, one file per request
     class Record
-      def initialize(app)
+      def initialize(app, dir:)
         @app = app
         @ts = Time.now
+        @dir = Pathname.new(dir) unless dir == :auto
         @counter = 0
       end
 
@@ -237,7 +238,7 @@ module Datadog
             run App.new
           end
 
-          use Record
+          use Record, dir: settings.record_dir if settings.record_dir
           use Intercept
           use Mock
 
@@ -318,7 +319,8 @@ module Datadog
         :host,
         :port,
         :agent_host,
-        :agent_port
+        :agent_port,
+        :record_dir
 
       def initialize
         @debug = false
@@ -327,6 +329,7 @@ module Datadog
         @port = 8128
         @agent_host = IPAddr.new("127.0.0.1")
         @agent_port = 8126
+        @record_dir = nil
       end
 
       def to_h
@@ -359,6 +362,8 @@ module Datadog
             settings.agent_host = IPAddr.new(args.shift)
           when "-g", "--agent-port"
             settings.agent_port = Integer(args.shift)
+          when "-r", "--record"
+            settings.record_dir = (args.empty? || args.first.start_with?("--")) ? :auto : Pathname.new(args.shift)
           else
             raise UsageError, "invalid argument: #{arg}"
           end
