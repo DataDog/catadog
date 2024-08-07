@@ -167,20 +167,6 @@ module Datadog
       end
     end
 
-    class Mock
-      def initialize(app)
-        @app = app
-      end
-
-      def call(env)
-        r = Rack::Request.new(env)
-
-        # mock /info
-
-        @app.call(env)
-      end
-    end
-
     class Proxy
       def initialize(host, port)
         @host = host
@@ -275,7 +261,17 @@ module Datadog
           use Record, dir: settings.record_dir if settings.record_dir
           use Print
           use Intercept
-          use Mock
+
+          settings.mocks.each do |mock|
+            mock_file, mock_classname = mock.split(":", 2)
+
+            mock_file = Pathname.new(mock_file)
+            mock_classname = mock_file.basename(".rb").to_s.gsub(/(^|_)\S/) { |m| m.tr("_", "").upcase } if mock_classname.nil?
+            require Pathname.pwd / mock_file
+            mock_class = mock_classname.split("::").reduce(Kernel) { |mod, name| mod.const_get(name) }
+
+            use mock_class
+          end
 
           run Proxy.new(settings.agent_host, settings.agent_port)
         end.to_app
@@ -358,7 +354,8 @@ module Datadog
         :agent_port,
         :record_dir,
         :silent,
-        :log
+        :log,
+        :mocks
 
       def initialize
         @debug = false
@@ -370,6 +367,7 @@ module Datadog
         @record_dir = nil
         @silent = false
         @log = $stderr
+        @mocks = []
       end
 
       def to_h
@@ -408,6 +406,8 @@ module Datadog
             settings.agent_port = Integer(args.shift)
           when "-r", "--record"
             settings.record_dir = (args.empty? || args.first.start_with?("--")) ? :auto : Pathname.new(args.shift)
+          when "-m", "--mock"
+            settings.mocks << String(args.shift)
           else
             raise UsageError, "invalid argument: #{arg}"
           end
