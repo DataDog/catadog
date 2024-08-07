@@ -231,6 +231,12 @@ module Datadog
       end
     end
 
+    class NotFound
+      def call(env)
+        [404, {"Content-Type" => "application/json"}, [JSON.dump({})]]
+      end
+    end
+
     class Server
       def initialize(settings, logger:)
         @logger = logger # for Rack
@@ -273,7 +279,7 @@ module Datadog
             use mock_class
           end
 
-          run Proxy.new(settings.agent_host, settings.agent_port)
+          run settings.forward ? Proxy.new(settings.agent_host, settings.agent_port) : NotFound.new
         end.to_app
       end
 
@@ -350,6 +356,7 @@ module Datadog
         :verbosity,
         :host,
         :port,
+        :forward,
         :agent_host,
         :agent_port,
         :record_dir,
@@ -362,6 +369,7 @@ module Datadog
         @verbosity = 0
         @host = IPAddr.new("127.0.0.1")
         @port = 8128
+        @forward = true
         @agent_host = IPAddr.new("127.0.0.1")
         @agent_port = 8126
         @record_dir = nil
@@ -400,6 +408,8 @@ module Datadog
             settings.host = IPAddr.new(args.shift)
           when "-p", "--port"
             settings.port = Integer(args.shift)
+          when "-F", "--no-forward"
+            settings.forward = false
           when "-f", "--agent-host"
             settings.agent_host = IPAddr.new(args.shift)
           when "-g", "--agent-port"
