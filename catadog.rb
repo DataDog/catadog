@@ -12,6 +12,8 @@ require "pry"
 require "json"
 require "msgpack"
 require "base64"
+require "date"
+require "pathname"
 
 module Datadog
   module Catadog
@@ -96,9 +98,48 @@ module Datadog
           }
         }
 
+        # used for bubbling up to record
+        env["catadog.intercept"] = d
+
         $stdout.write(JSON.pretty_generate(d) << "\n")
 
         [status, headers, body]
+      end
+    end
+
+    # Dump from `Intercept`, one file per request
+    class Record
+      def initialize(app)
+        @app = app
+        @ts = Time.now
+        @counter = 0
+      end
+
+      def call(env)
+        @app.call(env)
+      ensure
+        # TODO: consider exception case as well
+
+        if (d = env["catadog.intercept"])
+          write(JSON.pretty_generate(d))
+        end
+
+        @counter += 1
+      end
+
+      private
+
+      def dir
+        @dir ||= Pathname.new("out") / @ts.iso8601
+      end
+
+      def filename
+        dir / format("%05d.json", @counter)
+      end
+
+      def write(str)
+        dir.mkpath
+        File.open(filename, "wb") { |f| f << str }
       end
     end
 
@@ -109,6 +150,8 @@ module Datadog
 
       def call(env)
         r = Rack::Request.new(env)
+
+        # mock /info
 
         @app.call(env)
       end
@@ -194,6 +237,7 @@ module Datadog
             run App.new
           end
 
+          use Record
           use Intercept
           use Mock
 
