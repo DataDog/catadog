@@ -177,10 +177,19 @@ module Datadog
       def initialize(host, port)
         @host = host
         @port = port
+        @uuid = SecureRandom.uuid
       end
 
       def call(env)
         r = Rack::Request.new(env)
+
+        catadog = if (h = r.get_header("HTTP_X_CATADOG"))
+          h.split(",")
+        else
+          []
+        end
+
+        raise "catadog loop detected!" if catadog.include?(@uuid)
 
         host = @host
         port = @port
@@ -214,6 +223,8 @@ module Datadog
               req[header_name] = v
             end
           end
+
+          req["x-catadog"] = (catadog << @uuid).join(",")
 
           res = http.request(req)
 
