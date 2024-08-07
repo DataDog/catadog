@@ -98,12 +98,27 @@ module Datadog
           }
         }
 
-        # used for bubbling up to record
+        # used for bubbling up to output middlewares
         env["catadog.intercept"] = d
 
-        $stdout.write(JSON.pretty_generate(d) << "\n")
-
         [status, headers, body]
+      end
+    end
+
+    class Print
+      def initialize(app, out: $stdout)
+        @app = app
+        @out = out
+      end
+
+      def call(env)
+        @app.call(env)
+      ensure
+        # TODO: consider exception case as well
+
+        if (d = env["catadog.intercept"])
+          @out.write(JSON.pretty_generate(d) << "\n")
+        end
       end
     end
 
@@ -239,6 +254,7 @@ module Datadog
           end
 
           use Record, dir: settings.record_dir if settings.record_dir
+          use Print
           use Intercept
           use Mock
 
