@@ -1,11 +1,8 @@
 source "https://rubygems.org"
 
-gem "webrick", "~> 1.8.0"
-gem "rack", "~> 2.2"
-gem "sinatra", "~> 2.1"
+gemspec
 
-gem "json"
-gem "msgpack"
+gem "rake", "~> 13.0"
 
 group :check do
   gem "standard", "~> 1.29.0", require: false

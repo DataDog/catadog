@@ -52,6 +52,7 @@ module Datadog
 
         status, headers, body = @app.call(env)
 
+        # TODO: these content-type things should at best be fallbacks
         case headers["Content-Type"]
         when "application/json"
           res_d = JSON.parse(body.first)
@@ -271,9 +272,12 @@ module Datadog
           settings.mocks.each do |mock|
             mock_file, mock_classname = mock.split(":", 2)
 
-            mock_file = Pathname.new(mock_file)
-            mock_classname = mock_file.basename(".rb").to_s.gsub(/(^|_)\S/) { |m| m.tr("_", "").upcase } if mock_classname.nil?
-            require Pathname.pwd / mock_file
+            unless mock_file.nil? || mock_file.empty?
+              mock_file = Pathname.new(mock_file)
+              mock_classname = mock_file.basename(".rb").to_s.gsub(/(^|_)\S/) { |m| m.tr("_", "").upcase } if mock_classname.nil?
+              require Pathname.pwd / mock_file
+            end
+
             mock_class = mock_classname.split("::").reduce(Kernel) { |mod, name| mod.const_get(name) }
 
             use mock_class
@@ -427,6 +431,8 @@ module Datadog
       end
 
       def run
+        load_gem_mocks
+
         logger = Logger.new(@settings.silent ? Pathname.new("/dev/null").open("wb") : @settings.log, level: log_level)
         logger.debug { "settings: #{@settings}" }
 
@@ -435,6 +441,14 @@ module Datadog
         server.start
       ensure
         @settings.log.close
+      end
+
+      def load_gem_mocks
+        gem_mocks_path.glob("*.rb").each { |f| require f.to_s }
+      end
+
+      def gem_mocks_path
+        Pathname.new(__dir__) / ".." / "mocks"
       end
 
       private
@@ -446,4 +460,4 @@ module Datadog
   end
 end
 
-Datadog::Catadog::CLI.new(ARGV).run if __FILE__ == $PROGRAM_NAME
+Datadog::Catadog::CLI.new(ARGV).run
