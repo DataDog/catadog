@@ -6,7 +6,7 @@
 git clone https://github.com/DataDog/catadog
 cd catadog
 bundle install
-bundle exec ruby catadog.rb
+bundle exec catadog
 ```
 
 Now start your agent and app!
@@ -18,103 +18,121 @@ Remember to do either one of:
 
 ## Examples
 
-Change listening host and port (defaults to 127.0.0.1 8128)
+Change listening host and port (defaults to 127.0.0.1:8128)
 
 ```
-bundle exec ruby catadog.rb -h 0.0.0.0 -p 8888
+bundle exec catadog -h 0.0.0.0 -p 8888
 ```
 
-Change agent host and port to proxy to (defaults to 127.0.0.1 8126)
+Change agent host and port to proxy to (defaults to 127.0.0.1:8126)
 
 ```
-bundle exec ruby catadog.rb --agent-host 10.1.2.3 --agent-port 8127
+bundle exec catadog --agent-host 10.1.2.3 --agent-port 8127
 ```
 
 Silence WEBrick logs (they're on stderr):
 
 ```
-bundle exec ruby catadog.rb 2>/dev/null
+bundle exec catadog 2>/dev/null
 ```
 
 Record stuff (they're on stdout):
 
 ```
-bundle exec ruby catadog.rb > dump.json
+bundle exec catadog > dump.json
+```
+
+Record stuff, one file per request:
+
+```
+bundle exec catadog --record
+```
+
+Use the sink mock, and don't forward to a real agent (mock route misses fall back to 404):
+
+```
+bundle exec catadog --mock :Sink --no-forward
+```
+
+Bring your own mock! (you can use `--mock` multuiple times)
+
+```
+bundle exec catadog --mock /path/to/mock.rb:MockMiddlewareClass --no-forward
 ```
 
 Select specific areas:
 
 ```
-bundle exec ruby catadog.rb | jq 'select(.kind=="info")'
-bundle exec ruby catadog.rb | jq 'select(.kind=="traces")
-bundle exec ruby catadog.rb | jq 'select(.kind=="telemetry")'
-bundle exec ruby catadog.rb | jq 'select(.kind=="rc")'
+bundle exec catadog | jq 'select(.kind=="info")'
+bundle exec catadog | jq 'select(.kind=="traces")
+bundle exec catadog | jq 'select(.kind=="telemetry")'
+bundle exec catadog | jq 'select(.kind=="rc")'
 ```
 
 Show only request body of traces that have a span name `rack.request`:
 
 ```
-bundle exec ruby catadog.rb | jq 'select(.kind=="traces") | .request.body | .[] | select(.[].name == "rack.request")'
+bundle exec catadog | jq 'select(.kind=="traces") | .request.body | .[] | select(.[].name == "rack.request")'
 ```
 
 Ask telemetry if appsec is enabled:
 
 ```
-bundle exec ruby catadog.rb | jq 'select(.kind=="telemetry") | .request.body | .payload.additional_payload | .[] | select(.name == "appsec.enabled")'
+bundle exec catadog | jq 'select(.kind=="telemetry") | .request.body | .payload.additional_payload | .[] | select(.name == "appsec.enabled")'
 ```
 
 Ask telemetry the list of reported dependencies and their versions, formatted as tab separated:
 
 ```
-bundle exec ruby catadog.rb | jq 'select(.kind=="telemetry") | .request.body | .payload.dependencies | .[] | [.name, .version] | @tsv' -r
+bundle exec catadog | jq 'select(.kind=="telemetry") | .request.body | .payload.dependencies | .[] | [.name, .version] | @tsv' -r
 ```
 
 Ask telemetry which integrations are enabled:
 
 ```
-bundle exec ruby catadog.rb | jq 'select(.kind=="telemetry") | .request.body | .payload.integrations | .[] | select(.enabled)'
+bundle exec catadog | jq 'select(.kind=="telemetry") | .request.body | .payload.integrations | .[] | select(.enabled)'
 ```
 
 Show RC client config state as it evolves:
 
 ```
-bundle exec ruby catadog.rb | jq 'select(.kind=="rc") | .request.body.client.state.config_states'
+bundle exec catadog | jq 'select(.kind=="rc") | .request.body.client.state.config_states'
 ```
 
 Show RC client cached targets as they evolve:
 
 ```
-bundle exec ruby catadog.rb | jq 'select(.kind=="rc") | .request.body.cached_target_files'
+bundle exec catadog | jq 'select(.kind=="rc") | .request.body.cached_target_files'
 ```
 
 Show RC targets as they are received:
 
 ```
-bundle exec ruby catadog.rb | jq 'select(.kind=="rc") | .response.body.target_files'
+bundle exec catadog | jq 'select(.kind=="rc") | .response.body.target_files'
 ```
 
 Show RC targets in both request and response as they evolve:
 
 ```
-bundle exec ruby catadog.rb | jq 'select(.kind=="rc") | { cached: .request.body.cached_target_files | map(.path), received: .response.body.targets.signed.targets }'
+bundle exec catadog | jq 'select(.kind=="rc") | { cached: .request.body.cached_target_files | map(.path), received: .response.body.targets.signed.targets }'
 ```
 
 Show the contents of the `ASM_DD` product traget as it is received
 
 ```
-bundle exec ruby catadog.rb | jq 'select(.kind=="rc") | .response.body.target_files | .[] | select(.path | test("ASM_DD"))'
+bundle exec catadog | jq 'select(.kind=="rc") | .response.body.target_files | .[] | select(.path | test("ASM_DD"))'
 ```
 
 Show the contents of the `crs-913-110` rule as it is received:
 
 ```
-bundle exec ruby catadog.rb | jq 'select(.kind=="rc") | .response.body.target_files | .[] | select(.path | test("ASM_DD")) | .parsed.rules | .[] | select(.id == "crs-913-110")'
+bundle exec catadog | jq 'select(.kind=="rc") | .response.body.target_files | .[] | select(.path | test("ASM_DD")) | .parsed.rules | .[] | select(.id == "crs-913-110")'
 ```
 
 Show the contents of the blocked ips list:
 
 ```
-bundle exec ruby catadog.rb | jq 'select(.kind=="rc") | .response.body.target_files | .[] | select(.path | test("ASM_DATA/blocked_ips"))'
+bundle exec catadog | jq 'select(.kind=="rc") | .response.body.target_files | .[] | select(.path | test("ASM_DATA/blocked_ips"))'
 ```
 
 ## The big idea
