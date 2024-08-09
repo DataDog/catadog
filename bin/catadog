@@ -348,7 +348,8 @@ module Datadog
           Logger: logger,
           AccessLog: [[logger.instance_variable_get(:@logdev).dev, WEBrick::AccessLog::COMBINED_LOG_FORMAT]],
           BindAddress: settings.host.to_s,
-          Port: settings.port
+          Port: settings.port,
+          ServerType: settings.daemon ? WEBrick::Daemon : WEBrick::SimpleServer
           # RequestCallback: request_callback
         }
       end
@@ -366,7 +367,8 @@ module Datadog
         :record_dir,
         :silent,
         :log,
-        :mocks
+        :mocks,
+        :daemon
 
       def initialize
         @debug = false
@@ -378,6 +380,7 @@ module Datadog
         @agent_port = 8126
         @record_dir = nil
         @silent = false
+        @daemon = false
         @log = $stderr
         @mocks = []
       end
@@ -402,6 +405,8 @@ module Datadog
           case arg
           when "-d", "--debug"
             settings.debug = true
+          when "--daemon"
+            settings.daemon = true
           when "-s", "--silent"
             settings.silent = true
           when "-v", "--verbose"
