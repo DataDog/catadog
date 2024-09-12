@@ -415,7 +415,7 @@ module Datadog
           when "-F", "--no-forward"
             settings.forward = false
           when "-f", "--agent-host"
-            settings.agent_host = IPAddr.new(args.shift)
+            settings.agent_host = args.shift
           when "-g", "--agent-port"
             settings.agent_port = Integer(args.shift)
           when "-r", "--record"
