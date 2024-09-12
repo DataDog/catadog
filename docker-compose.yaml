@@ -19,3 +19,4 @@ services:
       - DD_BIND_HOST=0.0.0.0
       - DD_APM_NON_LOCAL_TRAFFIC=true
       - DD_REMOTE_CONFIGURATION_ENABLED=true
+      
