@@ -1,0 +1,20 @@
+name: build catadog
+
+on:
+  # trigger catadog every time a push occurs on any branch
+  push: 
+    branches:
+      - "**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: build image
+        run: docker buildx build -t catadog .
+      - name: test image by starting up a container
+        run: docker run --rm -d --name catadog catadog
+      - name: kill container
+        run: docker container kill catadog
