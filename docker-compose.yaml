@@ -1,0 +1,22 @@
+services:
+  app:
+    image: catadog
+    command: --agent-host agent
+    depends_on:
+      - agent
+    ports:
+      - "8126:8128"
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./records:/app/records
+  agent:
+    image: datadog/agent:7.52.0
+    env_file:
+      - ".env"
+    environment: 
+      - DD_APM_ENABLED=true
+      - DD_BIND_HOST=0.0.0.0
+      - DD_APM_NON_LOCAL_TRAFFIC=true
+      - DD_REMOTE_CONFIGURATION_ENABLED=true
+      
