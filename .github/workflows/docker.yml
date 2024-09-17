@@ -6,15 +6,52 @@ on:
     branches:
       - "**"
 
+env:
+  # push images to the github container registry
+  REGISTRY: ghrc.io
+  # store images in the datadog/catadog repository
+  REPO: datadog/catadog
+
 jobs:
   build:
+    strategy:
+      # in matrix strategy where you're running multiple jobs with different variable combinations, setting fail-fast to false lets jobs continue running despite other failed jobs
+      fail-fast: false
+      # not sure if we need a matrix strategy to test multiple different versions of ruby... catadog's base image is ruby 3.4 so maybe we should only have ruby 3.4?
+      matrix:
+        include:
+          - engine: ruby
+            version: "3.4"
     runs-on: ubuntu-latest
+    name: build (${{ matrix.engine }} ${{ matrix.version }})
     steps:
+      - name: set variables
+        id: vars
+        run: |
+          echo "SRC=." >> $GITHUB_OUTPUT
+          echo "IMAGE=${{ env.REGISTRY }}/${{ env.REPO }}/engines/${{ matrix.engine }}" >> $GITHUB_OUTPUT
+          echo "TAG=${{ matrix.version }}" >> $GITHUB_OUTPUT
+          echo "DOCKERFILE=./Dockerfile" >> $GITHUB_OUTPUT
+      # check out repository code
       - name: checkout
         uses: actions/checkout@v4
-      - name: build image
-        run: docker buildx build -t catadog .
-      - name: test image by starting up a container
-        run: docker run --rm -d --name catadog catadog
-      - name: kill container
-        run: docker container kill catadog
+      # docker container engine enables advanced buildx features, possibly to allow different platforms (x86_64 and aarch64-linux)
+      - name: set up docker container engine
+        run: |
+          docker buildx create --name=container --driver=docker-container --use --bootstrap
+      # build x86_64 image
+      - name: build single-arch image (x86_64)
+        run: |
+          docker buildx build ${{ steps.vars.outputs.SRC }} --builder=container --cache-from=type=registry,ref=${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} --output=type=image,push=false --platform linux/x86_64 -f ${{ steps.vars.outputs.DOCKERFILE }}
+      # tag image so that it can be referenced in testing step. tag separately from build to avoid interference w caching
+      - name: tag single-arch image (x86_64)
+        run: |
+          docker buildx build ${{ steps.vars.outputs.SRC }} --builder=container --cache-from=type=registry,ref=${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} --load --platform linux/x86_64 -f ${{ steps.vars.outputs.DOCKERFILE }} --tag ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }}
+      # test image 
+      - name: test single-arch image (x86_64)
+        run: |
+          docker run --platform linux/x86_64 --rm ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} /bin/sh -c 'true'
+          docker run --platform linux/x86_64 --rm ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} ruby -e 'puts RUBY_DESCRIPTION'
+          docker run --platform linux/x86_64 --rm ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} gem --version
+          docker run --platform linux/x86_64 --rm ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} bundle --version
+          docker run --platform linux/x86_64 --rm -v "${PWD}":"${PWD}" -w "${PWD}" ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} /bin/sh -c 'bundle install && bundle exec rake test'
