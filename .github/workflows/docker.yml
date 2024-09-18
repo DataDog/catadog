@@ -1,6 +1,13 @@
 name: Build Catadog
 
 on:
+  workflow_dispatch:
+    inputs:
+      push:
+        description: Push images
+        required: true
+        type: boolean
+        default: true
   push: 
     branches:
       - "**"
