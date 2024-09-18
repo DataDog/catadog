@@ -73,3 +73,13 @@ jobs:
           docker run --platform linux/aarch64 --rm ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} gem --version
           docker run --platform linux/aarch64 --rm ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} bundle --version
           docker run --platform linux/aarch64 --rm -v "${PWD}":"${PWD}" -w "${PWD}" ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} /bin/sh -c 'bundle install && bundle exec rake test'
+      
+      # finally assemble multi-arch image for a combined push to the registry. this reruns docker build but because the layers are cached, it's fast
+      - name: log in to the container registry
+        if: ${{ inputs.push }}
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+      - name: Build multi-arch image (x86_64, aarch64)
+        if: ${{ inputs.push }}
+        run: |
+          docker buildx build ${{ steps.vars.outputs.SRC }} --builder=container --cache-from=type=registry,ref=${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} --output=type=image,push=true --build-arg BUILDKIT_INLINE_CACHE=1 --platform linux/x86_64,linux/aarch64 -f ${{ steps.vars.outputs.DOCKERFILE }} --tag ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }}
