@@ -12,29 +12,11 @@ on:
     branches:
       - "**"
 
-env:
-  REGISTRY: ghrc.io
-  REPO: datadog/catadog
-
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      # Test only ruby 3.4
-      matrix:
-        include:
-          - engine: ruby
-            version: "3.4"
     runs-on: ubuntu-latest
-    name: Build (${{ matrix.engine }} ${{ matrix.version }})
+    name: Build ruby 3.4
     steps:
-      - name: Set variables
-        id: vars
-        run: |
-          echo "SRC=." >> $GITHUB_OUTPUT
-          echo "IMAGE=${{ env.REGISTRY }}/${{ env.REPO }}/engines/${{ matrix.engine }}" >> $GITHUB_OUTPUT
-          echo "TAG=${{ matrix.version }}" >> $GITHUB_OUTPUT
-          echo "DOCKERFILE=./Dockerfile" >> $GITHUB_OUTPUT
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -48,17 +30,17 @@ jobs:
       # Tag image separately to avoid interference with caching and so that testing step can reference the image
       - name: Build single-arch image (x86-64)
         run: |
-          docker buildx build ${{ steps.vars.outputs.SRC }} --builder=container --cache-from=type=registry,ref=${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} --output=type=image,push=false --platform linux/x86_64 -f ${{ steps.vars.outputs.DOCKERFILE }}
+          docker buildx build . --builder=container --cache-from=type=registry,ref=ghrc.io/datadog/catadog --output=type=image,push=false --platform linux/x86_64 -f ./Dockerfile
       - name: Tag single-arch image (x86-64)
         run: |
-          docker buildx build ${{ steps.vars.outputs.SRC }} --builder=container --cache-from=type=registry,ref=${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} --load --platform linux/x86_64 -f ${{ steps.vars.outputs.DOCKERFILE }} --tag ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }}
+          docker buildx build . --builder=container --cache-from=type=registry,ref=ghrc.io/datadog/catadog --load --platform linux/x86_64 -f ./Dockerfile --tag ghrc.io/datadog/catadog
       - name: Test single-arch image (x86-64)
         run: |
-          docker run --platform linux/x86_64 --rm ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} /bin/sh -c 'true'
-          docker run --platform linux/x86_64 --rm ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} ruby -e 'puts RUBY_DESCRIPTION'
-          docker run --platform linux/x86_64 --rm ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} gem --version
-          docker run --platform linux/x86_64 --rm ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} bundle --version
-          docker run --platform linux/x86_64 --rm -v "${PWD}":"${PWD}" -w "${PWD}" ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} /bin/sh -c 'bundle install && bundle exec rake test'
+          docker run --platform linux/x86_64 --rm ghrc.io/datadog/catadog /bin/sh -c 'true'
+          docker run --platform linux/x86_64 --rm ghrc.io/datadog/catadog ruby -e 'puts RUBY_DESCRIPTION'
+          docker run --platform linux/x86_64 --rm ghrc.io/datadog/catadog gem --version
+          docker run --platform linux/x86_64 --rm ghrc.io/datadog/catadog bundle --version
+          docker run --platform linux/x86_64 --rm -v "${PWD}":"${PWD}" -w "${PWD}" ghrc.io/datadog/catadog /bin/sh -c 'bundle install && bundle exec rake test'
 
       # Build image for aarch64-linux, emulated under qemu
       # 
@@ -68,17 +50,17 @@ jobs:
           docker run --privileged --rm tonistiigi/binfmt --install arm64
       - name: Build single-arch image (aarch64-linux)
         run: |
-          docker buildx build ${{ steps.vars.outputs.SRC }} --builder=container --cache-from=type=registry,ref=${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} --output=type=image,push=false --platform linux/aarch64 -f ${{ steps.vars.outputs.DOCKERFILE }}
+          docker buildx build . --builder=container --cache-from=type=registry,ref=ghrc.io/datadog/catadog --output=type=image,push=false --platform linux/aarch64 -f ./Dockerfile
       - name: Tag single-arch image (aarch64-linux)
         run: |
-          docker buildx build ${{ steps.vars.outputs.SRC }}  --builder=container --cache-from=type=registry,ref=${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} --load --platform linux/aarch64 -f ${{ steps.vars.outputs.DOCKERFILE }} --tag ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }}
+          docker buildx build .  --builder=container --cache-from=type=registry,ref=ghrc.io/datadog/catadog --load --platform linux/aarch64 -f ./Dockerfile --tag ghrc.io/datadog/catadog
       - name: Test single-arch image (aarch64-linux)
         run: |
-          docker run --platform linux/aarch64 --rm ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} /bin/sh -c 'true'
-          docker run --platform linux/aarch64 --rm ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} ruby -e 'puts RUBY_DESCRIPTION'
-          docker run --platform linux/aarch64 --rm ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} gem --version
-          docker run --platform linux/aarch64 --rm ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} bundle --version
-          docker run --platform linux/aarch64 --rm -v "${PWD}":"${PWD}" -w "${PWD}" ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} /bin/sh -c 'bundle install && bundle exec rake test'
+          docker run --platform linux/aarch64 --rm ghrc.io/datadog/catadog /bin/sh -c 'true'
+          docker run --platform linux/aarch64 --rm ghrc.io/datadog/catadog ruby -e 'puts RUBY_DESCRIPTION'
+          docker run --platform linux/aarch64 --rm ghrc.io/datadog/catadog gem --version
+          docker run --platform linux/aarch64 --rm ghrc.io/datadog/catadog bundle --version
+          docker run --platform linux/aarch64 --rm -v "${PWD}":"${PWD}" -w "${PWD}" ghrc.io/datadog/catadog /bin/sh -c 'bundle install && bundle exec rake test'
       
       # Assemble multi-arch image for a combined push to the registry
       # 
@@ -86,8 +68,8 @@ jobs:
       - name: Log in to the container registry
         if: ${{ inputs.push }}
         run: |
-          echo ${{ secrets.GITHUB_TOKEN }} | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghrc.io -u ${{ github.actor }} --password-stdin
       - name: Build multi-arch image (x86-64, aarch64)
         if: ${{ inputs.push }}
         run: |
-          docker buildx build ${{ steps.vars.outputs.SRC }} --builder=container --cache-from=type=registry,ref=${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} --output=type=image,push=true --build-arg BUILDKIT_INLINE_CACHE=1 --platform linux/x86_64,linux/aarch64 -f ${{ steps.vars.outputs.DOCKERFILE }} --tag ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }}
+          docker buildx build . --builder=container --cache-from=type=registry,ref=ghrc.io/datadog/catadog --output=type=image,push=true --build-arg BUILDKIT_INLINE_CACHE=1 --platform linux/x86_64,linux/aarch64 -f ./Dockerfile --tag ghrc.io/datadog/catadog
