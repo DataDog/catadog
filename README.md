@@ -2,6 +2,18 @@
 
 ## Quick start
 
+### Use Docker
+
+Run the following command to start a new Docker container with `catadog`.
+
+```
+docker run --rm -d --name catadog ghcr.io/datadog/catadog
+```
+
+### or Ruby Bundler
+
+Run the following commands to install and run `catadog` locally.
+
 ```
 git clone https://github.com/DataDog/catadog
 cd catadog
@@ -9,14 +21,16 @@ bundle install
 bundle exec catadog
 ```
 
-Now start your agent and app!
+### Now start your agent and app!
 
-Remember to do either one of:
+Remember to do either one of the following:
 
 - configure your app's agent connection to hit on the correct port
-- configure your agent to listen to another port, and have `catadog` listen on 8126 as the default and point to the new agent's port by using the settings below
+- configure your agent to listen to another port, have `catadog` listen on 8126 as the default, and point to the new agent's port by using the settings below
 
 ## Examples
+
+_**Note that if using Docker, replace `bundle exec catadog` with `docker run ghcr.io/datadog/catadog` in the examples below.**_
 
 Change listening host and port (defaults to 127.0.0.1:8128)
 
@@ -133,6 +147,48 @@ Show the contents of the blocked ips list:
 
 ```
 bundle exec catadog | jq 'select(.kind=="rc") | .response.body.target_files | .[] | select(.path | test("ASM_DATA/blocked_ips"))'
+```
+
+## Docker Compose
+
+By leveraging the `docker-compose.yaml` file, you can automatically connect your app to `catadog` and your datadog agent. 
+
+Clone the repository to your local environment by running the following commands.
+
+```
+git clone https://github.com/DataDog/catadog
+cd catadog
+```
+
+Create a `.env` file in the `catadog` directory that contains values for `DD_ENV`, `DD_HOSTNAME`, and `DD_API_KEY` such as below.
+
+```
+DD_ENV=env-name.dev
+DD_HOSTNAME=host-name
+DD_API_KEY=<api_key>
+```
+
+Instrument your app with the datadog library, and update the `docker-compose.yaml` such as below.
+
+```
+services:
+  catadog:
+    ...
+  agent:
+    ...
+  app:
+    image: my-app
+    environment:
+      - RAILS_MASTER_KEY=<key>
+    ports:
+      - "3000:3000"
+```
+
+Run the following commands, and see your app send traces to `catadog`!
+
+```
+docker buildx build -t catadog .
+docker compose up -d
 ```
 
 ## The big idea
