@@ -13,3 +13,5 @@ end
 group :dev do
   gem "pry"
 end
+
+gem "ostruct", "~> 0.6.0"
