@@ -2,7 +2,7 @@
 
 ## Quick start
 
-### Use Docker
+### Using Docker
 
 Run the following command to start a new Docker container with `catadog`.
 
@@ -23,7 +23,7 @@ bundle exec catadog
 
 ### Now start your agent and app!
 
-Remember to do either one of the following:
+Remember to do one of the following:
 
 - configure your app's agent connection to hit on the correct port
 - configure your agent to listen to another port, have `catadog` listen on 8126 as the default, and point to the new agent's port by using the settings below
@@ -149,18 +149,13 @@ Show the contents of the blocked ips list:
 bundle exec catadog | jq 'select(.kind=="rc") | .response.body.target_files | .[] | select(.path | test("ASM_DATA/blocked_ips"))'
 ```
 
-## Docker Compose
+## Using Docker Compose
 
 By leveraging the `docker-compose.yaml` file, you can automatically connect your app to `catadog` and your datadog agent. 
 
-Clone the repository to your local environment by running the following commands.
+First, [instrument your app](https://docs.datadoghq.com/tracing/trace_collection/automatic_instrumentation/dd_libraries/ruby/#instrument-your-application) with the datadog gem.
 
-```
-git clone https://github.com/DataDog/catadog
-cd catadog
-```
-
-Create a `.env` file in the `catadog` directory that contains values for `DD_ENV`, `DD_HOSTNAME`, and `DD_API_KEY` such as below.
+Then, include the following environment variables in a `.env` file.
 
 ```
 DD_ENV=env-name.dev
@@ -168,28 +163,38 @@ DD_HOSTNAME=host-name
 DD_API_KEY=<api_key>
 ```
 
-Instrument your app with the datadog library, and update the `docker-compose.yaml` such as below.
+Update your `docker-compose.yaml` such as below.
 
 ```
 services:
-  catadog:
-    ...
-  agent:
-    ...
   app:
-    image: my-app
-    environment:
-      - RAILS_MASTER_KEY=<key>
+    ...
+  catadog:
+    image: ghcr.io/datadog/catadog:latest
+    command: --agent-host agent
+    depends_on:
+      - agent
     ports:
-      - "3000:3000"
+      - "8126:8128"
+  agent:
+    image: datadog/agent
+    env_file:
+      - ".env"
+    environment: 
+      - DD_APM_ENABLED=true
+      - DD_BIND_HOST=0.0.0.0
+      - DD_APM_NON_LOCAL_TRAFFIC=true
+      - DD_REMOTE_CONFIGURATION_ENABLED=true
 ```
 
-Run the following commands, and see your app send traces to `catadog`!
+Run the following commands.
 
 ```
-docker buildx build -t catadog .
+docker compose build
 docker compose up -d
 ```
+
+Finally, see your app send traces to `catadog`!
 
 ## The big idea
 
@@ -214,28 +219,3 @@ TODO:
 - *traces*: GUI like dd-trace-cat
 - *all*: mock (static, dynamic)
 - *all*: record, replay
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
