@@ -74,6 +74,12 @@ Bring your own mock! (you can use `--mock` multuiple times)
 bundle exec catadog --mock /path/to/mock.rb:MockMiddlewareClass --no-forward
 ```
 
+Run program as a background process
+
+```
+bundle exec catadog --daemon
+```
+
 Select specific areas:
 
 ```
