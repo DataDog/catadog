@@ -178,7 +178,7 @@ bundle exec catadog | jq 'select(.kind=="rc") | .response.body.target_files | .[
 
 ## Using Docker Compose
 
-By leveraging the `docker-compose.yaml` file, you can automatically connect your app to `catadog` and your datadog agent. 
+By leveraging the `docker-compose.yaml` file, you can automatically connect your app to `catadog` and your datadog agent.
 
 First, [instrument your app](https://docs.datadoghq.com/tracing/trace_collection/automatic_instrumentation/dd_libraries/ruby/#instrument-your-application) with the datadog gem.
 
@@ -207,7 +207,7 @@ services:
     image: datadog/agent
     env_file:
       - ".env"
-    environment: 
+    environment:
       - DD_APM_ENABLED=true
       - DD_BIND_HOST=0.0.0.0
       - DD_APM_NON_LOCAL_TRAFFIC=true
