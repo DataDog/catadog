@@ -13,6 +13,7 @@ require "msgpack"
 require "base64"
 require "date"
 require "pathname"
+require "stringio"
 
 class WEBrick::HTTPServlet::ProcHandler
   # rubocop:disable Style/Alias
