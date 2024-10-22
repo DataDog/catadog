@@ -7,7 +7,7 @@
 Run the following command to start a new Docker container with `catadog`.
 
 ```
-docker run --rm -d --name catadog ghcr.io/datadog/catadog
+docker run --rm -it --publish 8128:8128 --name catadog ghcr.io/datadog/catadog
 ```
 
 ### Global command
