@@ -8,7 +8,6 @@ require "rack"
 require "sinatra/base"
 require "net/http"
 require "uri"
-require "pry"
 require "json"
 require "msgpack"
 require "base64"
@@ -289,9 +288,6 @@ module Datadog
 
       def handler(req, res)
         # https://github.com/rack/rack/blob/8f5c885f7e0427b489174a55e6d88463173f22d2/SPEC.rdoc
-
-        # binding.pry if /config/.match?(req.path_info)
-        # binding.pry if /traces/.match?(req.path_info)
 
         env = {}
 
