@@ -10,7 +10,28 @@ Run the following command to start a new Docker container with `catadog`.
 docker run --rm -d --name catadog ghcr.io/datadog/catadog
 ```
 
-### or Ruby Bundler
+### Global command
+
+Run the following commands to install and run `catadog` locally.
+
+```
+gem install catadog
+catadog
+```
+
+### Per project via a Gemfile
+
+```
+cat > Gemfile <<'EOF'
+source 'https://rubygems.org'
+
+gem 'catadog'
+EOF
+bundle install
+catadog
+```
+
+### For `catadog` development
 
 Run the following commands to install and run `catadog` locally.
 
