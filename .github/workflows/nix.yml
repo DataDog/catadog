@@ -37,8 +37,8 @@ jobs:
       - name: Check CPU arch
         run: |
           test "$(uname -m)" = "${{ matrix.platform.cpu }}"
-      - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - uses: DeterminateSystems/nix-installer-action@428f3c64a3f56011a8bfb3044a519374aff8e7df # main
       - name: Print ruby version
         run: |
           nix develop --command which ruby

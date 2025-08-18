@@ -9,10 +9,10 @@ jobs:
       contents: write
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@829114fc20da43a41d27359103ec7a63020954d4 # v1.255.0
         with:
           bundler-cache: true
           ruby-version: '3.2.4'
-      - uses: rubygems/release-gem@v1
+      - uses: rubygems/release-gem@ebe1ec66bd8d2c709ac29aa2b43438d450e7a0a6 # v1
